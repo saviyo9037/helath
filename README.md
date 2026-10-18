@@ -1,0 +1,180 @@
+# HealthForecast AI
+
+**Hospital Readmission Prediction & Patient Risk Intelligence System**
+
+An AI-powered healthcare analytics platform that predicts hospital readmissions,
+identifies high-risk patients, evaluates treatment effectiveness and supports
+proactive patient care planning.
+
+> **Interns start here: [INTERN_GUIDE.md](INTERN_GUIDE.md).**
+> You work on your own branch. Nothing is merged into `main`.
+
+---
+
+## What it does
+
+The platform helps hospitals reduce unnecessary readmissions, improve patient
+outcomes and optimise healthcare resources through patient risk prediction,
+readmission forecasting, treatment effectiveness analysis and hospital
+performance reporting.
+
+Intended users: hospitals, healthcare providers, clinics, insurance companies,
+healthcare researchers and public health organisations.
+
+## Modules
+
+| # | Module | Capability |
+|---|--------|-----------|
+| 1 | User Management | Doctor and administrator accounts, authentication, role management |
+| 2 | Patient Data Management | Patient records, medical history, treatment and admission tracking |
+| 3 | Risk Prediction | Risk analysis, readmission probability, high-risk identification |
+| 4 | Treatment Effectiveness | Outcome evaluation, recovery and medication effectiveness analysis |
+| 5 | Clinical Decision Support | Care recommendations, follow-up planning, discharge support |
+| 6 | Healthcare Analytics Dashboard | Readmission analytics, hospital performance, trend visualisation |
+| 7 | AI Model Management | Model training, evaluation, prediction monitoring, optimisation |
+
+## Roles
+
+Four roles, each with a distinct view of the data. The full access matrix is in
+[`docs/04-rbac/`](docs/04-rbac/) and is enforced in code by
+[`backend/app/core/rbac.py`](backend/app/core/rbac.py).
+
+| Role | Sees |
+|------|------|
+| **Doctor** | Assigned patients, their risk predictions and care recommendations |
+| **Hospital Administrator** | Hospital-wide analytics and performance, read-only on records |
+| **Healthcare Researcher** | Anonymised cohorts and aggregated statistics only |
+| **System Administrator** | Everything, plus user and model management |
+
+## Tech stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.11, FastAPI, SQLAlchemy, Alembic, JWT |
+| Frontend | Next.js 15, React 19, TypeScript, Tailwind CSS, Recharts |
+| Databases | PostgreSQL 16, MongoDB 7 |
+| ML | scikit-learn, XGBoost, Random Forest, TensorFlow, pandas, NumPy |
+| DevOps | Docker, Docker Compose, GitHub Actions, AWS or Azure |
+
+## Quick start
+
+```bash
+git clone https://github.com/GKSJ-AI-CliniScan/HealthForecastAI.git
+cd HealthForecastAI
+cp .env.example .env
+docker compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| Frontend | <http://localhost:3000> |
+| Backend | <http://localhost:8000> |
+| API docs | <http://localhost:8000/docs> |
+
+Running each service directly, without Docker, is covered in
+[INTERN_GUIDE.md](INTERN_GUIDE.md#2-get-set-up).
+
+## Repository layout
+
+| Path | Contents |
+|------|----------|
+| [`backend/`](backend/) | FastAPI service - API, RBAC, ORM, migrations, tests |
+| [`frontend/`](frontend/) | Next.js dashboards |
+| [`ml/`](ml/) | Modelling pipeline - preprocessing, training, evaluation |
+| [`database/`](database/) | PostgreSQL schema, MongoDB collection definitions |
+| [`deployment/`](deployment/) | Docker, nginx, AWS and Azure notes |
+| [`docs/`](docs/) | Architecture, database, API, RBAC, wireframes, milestones, testing, deployment |
+| [`scripts/ci/`](scripts/ci/) | The check scripts CI runs |
+| [`tests/`](tests/) | Integration and end-to-end tests |
+| [`.github/workflows/`](.github/workflows/) | CI, branch guard, security, progress report, deploy |
+
+## Milestones
+
+| Milestone | Weeks | Theme | Status on `main` |
+|-----------|-------|-------|------------------|
+| 1 | 1-2 | Project initialization, design process and core setup | **Complete** |
+| 2 | 3-4 | Risk prediction and readmission forecasting | **Complete** |
+| 3 | 5-6 | Treatment effectiveness analysis and healthcare analytics | **Complete** |
+| 4 | 7-8 | Testing, deployment and documentation | **Complete, except a live cloud deployment** |
+
+Report templates and evaluation criteria: [`docs/06-milestones/`](docs/06-milestones/).
+
+### What works today
+
+`main` carries a working reference implementation of Milestones 1 to 4:
+
+- JWT authentication with bcrypt hashing, audited logins, and immediate session
+  revocation when an account is deactivated
+- The full access matrix enforced in code and pinned by tests, with scoping
+  applied inside the SQL query rather than after it
+- Patient management with search, pagination and admission history
+- Role-aware dashboards for all four roles, built from real aggregates
+- The Diabetes 130-US Hospitals dataset loaded: 101,766 raw encounters cleaned
+  to 62,991 (the newest 10% of encounters are held back because they have not had time to show a readmission), a 9.36% 30-day readmission rate
+- 30-day readmission risk scoring: a calibrated model serving real-time and
+  batch predictions, risk banding, forecasting and global risk drivers.
+  XGBoost, held-out ROC-AUC 0.63 (95% CI 0.62-0.65); on unseen patients the high
+  band runs **2.6x** the baseline readmission rate and its predicted rate matches
+  the observed one (24.6% against 24.7%)
+- Treatment effectiveness: confounder-adjusted medication outcomes, a labelled
+  recovery proxy, risk-adjusted hospital performance, control-chart trend
+  monitoring, and rule-based care recommendations with a discharge plan, all
+  audited and privacy-protected exports
+- A fairness audit that reports the gaps it finds:
+  [docs/07-testing/fairness-audit.md](docs/07-testing/fairness-audit.md)
+- Validation, hardening and deployment: held-out accuracy report, sign-in lockout,
+  a readable audit trail, a load test (27.7 req/s at 20 users, 0 errors), end-to-end
+  tests, Docker Compose with a production overlay, and a gated release workflow.
+  **There is no live cloud deployment**: it needs the owner's cloud account. See
+  [docs/08-deployment](docs/08-deployment/README.md).
+
+Full write-ups: [milestone-1](docs/06-milestones/milestone-1.md) ·
+[milestone-2](docs/06-milestones/milestone-2.md) ·
+[milestone-3](docs/06-milestones/milestone-3.md) ·
+[milestone-4](docs/06-milestones/milestone-4.md) · [validation](docs/07-testing/validation-report.md) ·
+[presentation and demo script](docs/09-presentation/).
+
+## Continuous integration
+
+CI runs on **every branch**, and skips the jobs whose folders do not exist yet,
+so an early branch is not failed for work that has not started.
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| [CI](.github/workflows/ci.yml) | Every push and pull request | Repository checks, backend, frontend, ML, Docker |
+| [Branch guard](.github/workflows/branch-guard.yml) | Pull requests | Blocks pull requests into `main` |
+| [Security](.github/workflows/security.yml) | Every push, weekly | `pip-audit`, `npm audit`, CodeQL |
+| [Cohort report](.github/workflows/cohort-report.yml) | Weekly, on demand | Every intern in the roster: branch, commits ahead, CI result, last push |
+| [Deploy](.github/workflows/deploy.yml) | Manual only | Milestone 4: verify, build images, release to your environment |
+
+The full list of checks and how to run them locally is in
+[INTERN_GUIDE.md](INTERN_GUIDE.md#6-what-ci-checks).
+
+## For mentors
+
+Repository settings the pipeline cannot enforce on its own — branch protection,
+who can merge, Actions permissions — are listed in
+[`docs/mentor-setup.md`](docs/mentor-setup.md). A failing status check does not
+block a merge by itself, so those settings are what actually keep `main` intact.
+
+## Contributing
+
+This is an internship project repository.
+
+- Work on `intern/<your-name>`.
+- Do not push to `main`.
+- Do not open pull requests into `main`.
+- Never commit datasets, model artifacts, `.env` files, credentials, or any
+  real patient data.
+
+Read [INTERN_GUIDE.md](INTERN_GUIDE.md) before your first commit.
+
+## Dataset
+
+Diabetes 130-US Hospitals (1999-2008), 101,766 encounters.
+Download instructions: [`ml/data/README.md`](ml/data/README.md).
+**The dataset is never committed to this repository.**
+
+## Licence
+
+See [LICENSE](LICENSE).
